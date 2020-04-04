@@ -182,13 +182,14 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
 
     fig = px.line(df, x="daysFrom100", y="cases", color='province_state', title=title)
 
+    order = 8
     for multiple in [1, 2, 3, 5, 7]:
         fig.add_shape(
             type="line",
             x0=0,
             y0=100,
-            x1=7*(multiple),
-            y1=12800,
+            x1=order*(multiple),
+            y1=(2**order) * 100,
             line=dict(
                 color="Gray",
                 width=2,
@@ -207,7 +208,7 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
         xaxis = {
             'tickmode': 'auto',
             'nticks': 30,
-            'range': [0, 20]
+            'range': [0, 30]
         }
     )
 
@@ -236,7 +237,7 @@ def plot_USstates(start_date=None, casetype=['confirmed'], proportion=False, cum
     if plottype == 'linear':
         thisRange = [100, 1000000]
     else:
-        thisRange = [1, 6]
+        thisRange = [1.3, 6]
 
     df = getUSCovidCases(start_date=start_date, casetype=casetype, cumsum=cumulative)  
 
@@ -278,7 +279,7 @@ def plot_USstates(start_date=None, casetype=['confirmed'], proportion=False, cum
         xaxis = {
             'tickmode': 'auto',
             'nticks': 30,
-            'range': [0, 36]
+            'range': [0, 50]
         }
     )
 
