@@ -22,6 +22,6 @@ pycovid.plot_provinces(country=['Canada'],
 			casetype=['confirmed'], start_date="2019-12-01", plottype="log",
 			proportion=False, cumulative=True)
 
-# pycovid.plot_countries(metric='log_confirmed')
+pycovid.plot_countries(metric='log_confirmed')
 
 
