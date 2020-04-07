@@ -18,7 +18,9 @@ def getCovidCases(countries=None, provinces=None, start_date=None, end_date=None
             if country not in df.country_region.values:
                 print("Country: {0} not found in database. Check spelling!".format(country))
             df =  df[(df.country_region.isin(countries))]
-       
+    
+    print(df)
+
     if cumsum is True:
         if plotprovinces:
             df.cases = df.groupby('province_state')['cases'].transform(pd.Series.cumsum)   
@@ -27,7 +29,6 @@ def getCovidCases(countries=None, provinces=None, start_date=None, end_date=None
 
     iso_df = getIsoDf()           
     df = pd.merge(df, iso_df, left_on="country_region", right_on='name')
-    print(df)
     return df
 
 def getIsoDf():
@@ -148,8 +149,6 @@ def plot_countries_trend(countries=None, start_date=None, end_date=None, casetyp
 
     fig.show()
 
-
-
 def plot_provinces(country=None, provinces=None, start_date=None, end_date=None, casetype=['confirmed', 'death', 'recovered'], proportion=False, cumulative=True, plottype="linear"):
     ylabel = "Cases "
     title = "Number of confirmed COVID-19 cases over time in " + country[0] 
@@ -183,13 +182,14 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
 
     fig = px.line(df, x="daysFrom100", y="cases", color='province_state', title=title)
 
+    order = 8
     for multiple in [1, 2, 3, 5, 7]:
         fig.add_shape(
             type="line",
             x0=0,
             y0=100,
-            x1=7*(multiple),
-            y1=12800,
+            x1=order*(multiple),
+            y1=(2**order) * 100,
             line=dict(
                 color="Gray",
                 width=2,
@@ -208,11 +208,81 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
         xaxis = {
             'tickmode': 'auto',
             'nticks': 30,
-            'range': [0, 20]
+            'range': [0, 30]
         }
     )
 
     fig.update_shapes(dict(xref='x', yref='y'))
     fig.show()
 
+
+def getUSCovidCases(start_date=None, end_date=None, casetype=['confirmed'], cumsum=False):
+    df = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv',
+                names=['date', 'state', 'fips', 'cases', 'deaths'], skiprows=1, parse_dates=['date'])
+        
+    if start_date is not None:
+        df = df[df.date >= start_date]
+    if end_date is not None:
+        df = df[df.date <= end_date]
+
+    if cumsum is True:
+        df.cases = df.groupby('state')['cases'].transform(pd.Series.cumsum)   
+
+    return df
+
+def plot_USstates(start_date=None, casetype=['confirmed'], proportion=False, cumulative=True, plottype="linear"):
+    ylabel = "Cases "
+    title = "Number of new COVID-19 cases over time in each US state" 
     
+    if plottype == 'linear':
+        thisRange = [100, 1000000]
+    else:
+        thisRange = [1.3, 6]
+
+    df = getUSCovidCases(start_date=start_date, casetype=casetype, cumsum=cumulative)  
+
+    df = df[df.cases > 30]
+    df['daysFrom100'] = df['date']
+
+    states = np.unique(df.state)
+
+    for state in states:
+        temp =  df.loc[df.state == state, 'date'] - df.loc[df.state == state, 'date'].iloc[0]    
+        temp = temp.astype(int) / 10**9 / 60 / 60 / 24
+        df.loc[df.state == state, 'daysFrom100'] = temp
+
+    fig = px.line(df, x="daysFrom100", y="cases", color='state', title=title)
+
+    order = 13;
+    for multiple in [1, 2, 3, 5, 7]:
+        fig.add_shape(
+            type="line",
+            x0=0,
+            y0=30,
+            x1=order*(multiple),
+            y1=(2**order) * 30,
+            line=dict(
+                color="Gray",
+                width=2,
+                dash="dot",
+            )
+        )
+ 
+    fig.update_layout(
+        yaxis_title=ylabel,
+        yaxis = dict(
+            showexponent = 'all',
+            exponentformat = 'none',
+            type = plottype,
+            range = thisRange
+        ),
+        xaxis = {
+            'tickmode': 'auto',
+            'nticks': 30,
+            'range': [0, 50]
+        }
+    )
+
+    fig.update_shapes(dict(xref='x', yref='y'))
+    fig.show()
+
