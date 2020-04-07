@@ -20,7 +20,10 @@ pycovid.plot_USstates(casetype=['confirmed'], start_date="2019-12-01", cumulativ
 
 pycovid.plot_provinces(country=['Canada'],  
 			casetype=['confirmed'], start_date="2019-12-01", plottype="log",
-			proportion=False, cumulative=True)
+			cumulative=True)
+pycovid.plot_provinces_percapita(country=['Canada'],  
+			casetype=['confirmed'], start_date="2019-12-01", plottype="log",
+			cumulative=True)
 
 pycovid.plot_countries(metric='log_confirmed')
 

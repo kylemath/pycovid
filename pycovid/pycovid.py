@@ -149,7 +149,7 @@ def plot_countries_trend(countries=None, start_date=None, end_date=None, casetyp
 
     fig.show()
 
-def plot_provinces(country=None, provinces=None, start_date=None, end_date=None, casetype=['confirmed', 'death', 'recovered'], proportion=False, cumulative=True, plottype="linear"):
+def plot_provinces(country=None, provinces=None, start_date=None, end_date=None, casetype=['confirmed', 'death', 'recovered'], cumulative=True, plottype="linear"):
     ylabel = "Cases "
     title = "Number of confirmed COVID-19 cases over time in " + country[0] 
 
@@ -169,16 +169,6 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
         temp =  df.loc[df.province_state == province, 'date'] - df.loc[df.province_state == province, 'date'].iloc[0]    
         temp = temp.astype(int) / 10**9 / 60 / 60 / 24
         df.loc[df.province_state == province, 'daysFrom100'] = temp
-
-    print(df)
-
-    if proportion:
-        df_pop = pd.read_csv(country[0] + '_StatePop_19.csv', names=["state", 'population'], skiprows=0)
-        province_populations = df_pop.set_index('state').T.to_dict('records')[0]
-        ylabel = ylabel + "per 100,000 people"
-        title = title + " per 100,000 Citizens"
-        for province in provinces:
-            df.loc[df.province_state == province, 'cases'] = (df.loc[df.province_state == province, 'cases'] / province_populations[province]) * 100000
 
     fig = px.line(df, x="daysFrom100", y="cases", color='province_state', title=title)
 
@@ -214,6 +204,66 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
 
     fig.update_shapes(dict(xref='x', yref='y'))
     fig.show()
+
+
+def plot_provinces_percapita(country=None, provinces=None, start_date=None, end_date=None, casetype=['confirmed', 'death', 'recovered'], cumulative=True, plottype="linear"):
+    ylabel = "Cases "
+    title = "Number of confirmed COVID-19 cases over time in " + country[0] 
+
+
+
+    if plottype == 'linear':
+        thisRange = [100, 10000]
+    else:
+        thisRange = [-1, 2.5]
+
+    df = getCovidCases(countries=country, provinces = provinces, casetype = casetype, start_date=start_date, end_date=end_date, cumsum=cumulative, plotprovinces=True)
+    
+    df = df[df['province_state'] != 'Diamond Princess']
+    df = df[df['province_state'] != 'Grand Princess']
+    df = df[df['province_state'] != 'Recovered']
+
+    df['daysFrom1inMillion'] = df['date']
+
+    if provinces is None:
+        provinces = np.unique(df.province_state)
+
+ 
+    df_pop = pd.read_csv(country[0] + '_StatePop_19.csv', names=["state", 'population'], skiprows=0)
+    province_populations = df_pop.set_index('state').T.to_dict('records')[0]
+    ylabel = ylabel + "per 100,000 people"
+    title = title + " per 100,000 Citizens"
+    for province in provinces:
+        df.loc[df.province_state == province, 'cases'] = (df.loc[df.province_state == province, 'cases'] / province_populations[province]) * 100000
+
+    df = df[df.cases > .1]
+
+    for province in provinces:
+        temp =  df.loc[df.province_state == province, 'date'] - df.loc[df.province_state == province, 'date'].iloc[0]    
+        temp = temp.astype(int) / 10**9 / 60 / 60 / 24
+        df.loc[df.province_state == province, 'daysFrom1inMillion'] = temp
+
+
+    fig = px.line(df, x="daysFrom1inMillion", y="cases", color='province_state', title=title)
+
+    fig.update_layout(
+        yaxis_title=ylabel,
+        yaxis = dict(
+            showexponent = 'all',
+            exponentformat = 'none',
+            type = plottype,
+            range = thisRange
+        ),
+        xaxis = {
+            'tickmode': 'auto',
+            'nticks': 30,
+            # 'range': [0, 80]
+        }
+    )
+
+    fig.update_shapes(dict(xref='x', yref='y'))
+    fig.show()
+
 
 
 def getUSCovidCases(start_date=None, end_date=None, casetype=['confirmed'], cumsum=False):
