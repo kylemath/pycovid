@@ -130,7 +130,24 @@ def plot_countries_trend(countries=None, start_date=None, end_date=None, casetyp
 
     df = getCovidCases(countries=countries,  casetype = casetype, start_date=start_date, end_date=end_date, cumsum=cumulative)
 
-    fig = px.line(df, x="date", y="cases", color='name', title="Number of confirmed COVID-19 cases over time")
+
+
+    df_out = pd.DataFrame()
+    for country in countries: 
+        df_temp = df[df['country_region'] == country]
+        df2 = df_temp['cases'].groupby(df['date']).sum().rolling(7).mean().to_frame()
+        df2['date'] = df2.index
+        df2['name'] = country
+        df_out = df_out.append(df2)
+
+    df_out = df_out[df_out.cases > 10]
+    df_out['daysFromN'] = df_out['date']
+    for country in countries:
+        temp =  df_out.loc[df_out.name == country, 'date'] - df_out.loc[df_out.name == country, 'date'].iloc[0]    
+        temp = temp.astype(int) / 10**9 / 60 / 60 / 24
+        df_out.loc[df_out.name == country, 'daysFromN'] = temp
+
+    fig = px.line(df_out, x="daysFromN", y="cases", color='name', title="Number of confirmed COVID-19 cases over time")
 
     fig.update_layout(
         yaxis_title="cases",
@@ -140,10 +157,9 @@ def plot_countries_trend(countries=None, start_date=None, end_date=None, casetyp
             type = plottype
         ),
         xaxis = {
-            'tickformat': '%m-%d',
             'tickmode': 'auto',
-            'nticks': 30, 
-            'tick0': start_date,
+            'nticks': 30,
+            'range': [0, 70]
         }
     )
 
@@ -156,7 +172,7 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
     if plottype == 'linear':
         thisRange = [100, 10000]
     else:
-        thisRange = [1.3, 4.5]
+        thisRange = [1.3, 5]
 
     df = getCovidCases(countries=country, provinces = provinces, casetype = casetype, start_date=start_date, end_date=end_date, cumsum=cumulative, plotprovinces=True)
     df = df[df.cases > 30]
@@ -201,14 +217,14 @@ def plot_provinces(country=None, provinces=None, start_date=None, end_date=None,
         yaxis_title=ylabel,
         yaxis = dict(
             showexponent = 'all',
-            exponentformat = 'none',
+            exponentformat = 'e',
             type = plottype,
             range = thisRange
         ),
         xaxis = {
             'tickmode': 'auto',
             'nticks': 30,
-            'range': [0, 50]
+            'range': [0, 70]
         }
     )
 
@@ -279,7 +295,7 @@ def plot_USstates(start_date=None, casetype=['confirmed'], proportion=False, cum
         xaxis = {
             'tickmode': 'auto',
             'nticks': 30,
-            'range': [0, 50]
+            'range': [0, 70]
         }
     )
 
